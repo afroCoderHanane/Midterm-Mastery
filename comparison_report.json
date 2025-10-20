@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-10-19T21:17:44.775001",
+  "without_circuit_breaker": {
+    "request_count": 300,
+    "failure_count": 300,
+    "avg_response_time": 30011.64564499,
+    "min_response_time": 30002.641749997565,
+    "max_response_time": 30034.59391600336,
+    "requests_per_sec": 2.9181000854244235,
+    "failure_rate": 100.0
+  },
+  "with_circuit_breaker": {
+    "request_count": 6601,
+    "failure_count": 0,
+    "avg_response_time": 253.442354130248,
+    "min_response_time": 0.7833330018911511,
+    "max_response_time": 2044.323499998427,
+    "requests_per_sec": 55.34067625370811,
+    "failure_rate": 0.0
+  }
+}

@@ -1,0 +1,74 @@
+
+
+services:
+  # Healthy service - always works
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Faulty service - will timeout when SIMULATE_FAILURE=true
+  recommendations-service:
+    build:
+      context: ./recommendations-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    networks:
+      - ecommerce-net
+    environment:
+      - SIMULATE_FAILURE=true
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # API Gateway WITHOUT circuit breaker (v1) - runs on port 8080
+  api-gateway-v1:
+    build:
+      context: ./api-gateway-v1
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - ecommerce-net
+    depends_on:
+      - product-service
+      - recommendations-service
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # API Gateway WITH circuit breaker (v2) - runs on port 8090
+  api-gateway-v2:
+    build:
+      context: ./api-gateway-v2
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8080"  # External port 8090 maps to container port 8080
+    networks:
+      - ecommerce-net
+    depends_on:
+      - product-service
+      - recommendations-service
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  ecommerce-net:
+    driver: bridge
