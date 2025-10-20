@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit Breaker Pattern - CS6650</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide {
+            background: white;
+            width: 90%;
+            max-width: 1200px;
+            height: 85vh;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 60px;
+            display: none;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .slide.active {
+            display: flex;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3.5em;
+            color: #2d3748;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 30px;
+            border-bottom: 4px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 1.8em;
+            color: #4a5568;
+            margin: 25px 0 15px 0;
+        }
+
+        p, li {
+            font-size: 1.3em;
+            color: #4a5568;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            font-size: 1.5em;
+            color: #718096;
+            margin-bottom: 40px;
+        }
+
+        .presenter {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-top: 30px;
+        }
+
+        ul {
+            margin-left: 40px;
+            margin-top: 20px;
+        }
+
+        li {
+            margin-bottom: 20px;
+        }
+
+        .highlight {
+            background: #fef3c7;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .red {
+            color: #dc2626;
+            font-weight: 700;
+        }
+
+        .green {
+            color: #059669;
+            font-weight: 700;
+        }
+
+        .circuit-states {
+            display: flex;
+            justify-content: space-around;
+            margin: 40px 0;
+            gap: 30px;
+        }
+
+        .state {
+            flex: 1;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .state.closed {
+            background: #d1fae5;
+            border: 3px solid #059669;
+        }
+
+        .state.open {
+            background: #fee2e2;
+            border: 3px solid #dc2626;
+        }
+
+        .state.half-open {
+            background: #fef3c7;
+            border: 3px solid #f59e0b;
+        }
+
+        .state h3 {
+            margin-top: 0;
+            font-size: 1.6em;
+        }
+
+        .state p {
+            font-size: 1.1em;
+            margin-bottom: 0;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+            font-size: 1.2em;
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            text-align: left;
+            font-size: 1.3em;
+        }
+
+        .comparison-table td {
+            padding: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        .architecture-box {
+            background: #f7fafc;
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .architecture-box p {
+            font-size: 1.4em;
+            margin: 10px 0;
+        }
+
+        .arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        button {
+            background: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .slide-number {
+            position: absolute;
+            bottom: 30px;
+            left: 60px;
+            color: #a0aec0;
+            font-size: 1.1em;
+        }
+
+        .emoji {
+            font-size: 1.5em;
+        }
+
+        .metric-card {
+            background: #f7fafc;
+            border-left: 6px solid #667eea;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .metric-card strong {
+            color: #667eea;
+            font-size: 1.4em;
+        }
+
+        .big-number {
+            font-size: 3em;
+            font-weight: 700;
+            color: #dc2626;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .takeaway-box {
+            background: #ede9fe;
+            border-left: 8px solid #8b5cf6;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .takeaway-box h3 {
+            color: #8b5cf6;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Preventing System Collapse:<br>A Live Demo of the Circuit Breaker Pattern</h1>
+            <p class="subtitle">CS6650 - Building Scalable Distributed Systems</p>
+            <p class="presenter">Abdoul-hanane Gbadamassi</p>
+        </div>
+
+        <!-- Slide 2: Course Learnings -->
+        <div class="slide">
+            <h2>Key Course Learnings</h2>
+            <h3>The Story of Scalability</h3>
+            <ul>
+                <li>Massive systems don't appear fully formed — they <span class="highlight">evolve</span></li>
+                <li>Start simple (monolith) → solve bottlenecks one at a time</li>
+                <li>Load balancers → Stateless services → Caching → Sharding → Microservices</li>
+            </ul>
+            <div class="takeaway-box">
+                <h3>The Fundamental Principle</h3>
+                <p><strong>You must design for failure.</strong> In distributed systems, things are always breaking. Partial failures are a fact of life.</p>
+            </div>
+            <p style="margin-top: 30px;">Today's demo: What happens when we <span class="red">don't</span> design for failure, and how to <span class="green">fix it</span>.</p>
+            <span class="slide-number">2</span>
+        </div>
+
+        <!-- Slide 3: The Problem -->
+        <div class="slide">
+            <h2>The Problem: Cascading Failure</h2>
+            <div class="architecture-box">
+                <p><strong>API Gateway</strong></p>
+                <div class="arrow">↓ ↓</div>
+                <p><strong>Product Service</strong> (✅ Healthy) | <strong>Recommendations Service</strong> (❌ Faulty - 30s timeout)</p>
+            </div>
+            <h3>What happens when one service fails?</h3>
+            <p>The faulty Recommendations Service hangs for 30 seconds before timing out.</p>
+            <p class="red" style="font-size: 1.5em; margin-top: 30px;">Even though Product Service responds instantly, the entire request is blocked.</p>
+            <p style="margin-top: 30px; font-size: 1.4em;">➡️ <strong>Live Demo: Standard Gateway (Port 8080)</strong></p>
+            <span class="slide-number">3</span>
+        </div>
+
+        <!-- Slide 4: Load Test Results v1 -->
+        <div class="slide">
+            <h2>Load Test Results: Without Protection</h2>
+            <div class="big-number">💥 Complete System Failure</div>
+            <div class="metric-card">
+                <p><strong>Average Response Time:</strong> <span class="red">~30,000 ms</span></p>
+            </div>
+            <div class="metric-card">
+                <p><strong>Failure Rate:</strong> <span class="red">100%</span></p>
+            </div>
+            <div class="metric-card">
+                <p><strong>Throughput:</strong> <span class="red">~3 requests/second</span></p>
+            </div>
+            <div class="takeaway-box" style="margin-top: 40px;">
+                <h3>Key Takeaway</h3>
+                <p>A failure in a <strong>non-critical service</strong> brought the <strong>entire system down</strong>.</p>
+            </div>
+            <span class="slide-number">4</span>
+        </div>
+
+        <!-- Slide 5: Circuit Breaker Pattern -->
+        <div class="slide">
+            <h2>The Solution: Circuit Breaker Pattern</h2>
+            <p style="margin-bottom: 30px;">Like a breaker in your house that protects from power surges, this pattern protects your application from failing services.</p>
+            <div class="circuit-states">
+                <div class="state closed">
+                    <h3>🟢 CLOSED</h3>
+                    <p>Normal operation. Requests flow through. Monitors for failures.</p>
+                </div>
+                <div class="state open">
+                    <h3>🔴 OPEN</h3>
+                    <p>After failures, circuit trips. Rejects calls instantly. Fail fast!</p>
+                </div>
+                <div class="state half-open">
+                    <h3>🟡 HALF-OPEN</h3>
+                    <p>After cooldown, allows test request. Success → CLOSED. Fail → OPEN.</p>
+                </div>
+            </div>
+            <div class="takeaway-box">
+                <h3>Graceful Degradation</h3>
+                <p>When circuit is OPEN: Return core product details with empty recommendations instead of crashing.</p>
+            </div>
+            <span class="slide-number">5</span>
+        </div>
+
+        <!-- Slide 6: The Fix -->
+        <div class="slide">
+            <h2>The Fix in Action</h2>
+            <h3>Protected Gateway Configuration (Port 8090)</h3>
+            <ul>
+                <li><strong>Fast timeout:</strong> 5 seconds (vs 30+ seconds)</li>
+                <li><strong>Failure threshold:</strong> 3 consecutive failures</li>
+                <li><strong>Fallback:</strong> Return product data with empty recommendations</li>
+            </ul>
+            <p style="margin-top: 50px; font-size: 1.5em; text-align: center;">➡️ <strong>Live Demo: Protected Gateway</strong></p>
+            <p style="margin-top: 30px; font-size: 1.3em; text-align: center;">Watch the circuit breaker states transition in real-time!</p>
+            <span class="slide-number">6</span>
+        </div>
+
+        <!-- Slide 7: Load Test Results v2 -->
+        <div class="slide">
+            <h2>Load Test Results: With Circuit Breaker</h2>
+            <div class="big-number" style="color: #059669;">✅ System Stable</div>
+            <div class="metric-card">
+                <p><strong>Average Response Time:</strong> <span class="green">5 ms</span></p>
+            </div>
+            <div class="metric-card">
+                <p><strong>Throughput:</strong> <span class="green">~64 requests/second</span></p>
+            </div>
+            <div class="metric-card">
+                <p><strong>User Experience:</strong> <span class="green">Fully Functional</span></p>
+            </div>
+            <p style="margin-top: 40px; font-size: 1.4em; text-align: center;">The system is stable, responsive, and usable — even with a failing downstream service.</p>
+            <span class="slide-number">7</span>
+        </div>
+
+        <!-- Slide 8: Comparison -->
+        <div class="slide">
+            <h2>Side-by-Side Comparison</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>v1 (No Protection)</th>
+                        <th>v2 (Circuit Breaker)</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Avg Response Time</strong></td>
+                        <td class="red">~30,000 ms</td>
+                        <td class="green">5 ms</td>
+                        <td class="green">99.98% faster</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Throughput</strong></td>
+                        <td class="red">~3 req/s</td>
+                        <td class="green">~64 req/s</td>
+                        <td class="green">2,088% increase</td>
+                    </tr>
+                    <tr>
+                        <td><strong>User Experience</strong></td>
+                        <td><span class="emoji">🔴</span> Broken</td>
+                        <td><span class="emoji">🟢</span> Works</td>
+                        <td class="green">Functional</td>
+                    </tr>
+                </tbody>
+            </table>
+            <span class="slide-number">8</span>
+        </div>
+
+        <!-- Slide 9: Conclusion -->
+        <div class="slide">
+            <h2>Key Takeaways</h2>
+            <div class="takeaway-box">
+                <h3>🔒 Isolate Failures</h3>
+                <p>Don't let one bad service take down your entire system</p>
+            </div>
+            <div class="takeaway-box">
+                <h3>⚡ Fail Fast</h3>
+                <p>Stop wasting resources on operations doomed to fail</p>
+            </div>
+            <div class="takeaway-box">
+                <h3>🛡️ Degrade Gracefully</h3>
+                <p>Provide partial service instead of no service at all</p>
+            </div>
+            <p style="margin-top: 50px; font-size: 1.4em; text-align: center;">This is the difference between <span class="green">resilient architecture</span> and <span class="red">fragile systems</span>.</p>
+            <span class="slide-number">9</span>
+        </div>
+
+        <!-- Slide 10: Questions -->
+        <div class="slide">
+            <h1 style="text-align: center; margin-top: 150px;">Questions?</h1>
+            <p style="text-align: center; font-size: 1.5em; margin-top: 50px;">Happy to walk through the code on Piazza or discuss implementation details</p>
+            <p class="presenter" style="text-align: center;">Thank you!</p>
+            <span class="slide-number">10</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="previousSlide()">← Previous</button>
+        <button onclick="nextSlide()">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + slides.length) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function previousSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -25,12 +25,12 @@ type ProductDetails struct {
 }
 
 const (
-	productServiceURL         = "http://product-service:8081"
-	recommendationsServiceURL = "http://recommendations-service:8082"
+	productServiceURL         = "http://localhost:8081"
+	recommendationsServiceURL = "http://localhost:8082"
 )
 
 var httpClient = &http.Client{
-	Timeout: 2 * time.Second, // Shorter timeout for fail-fast
+	Timeout: 5 * time.Second, // Shorter timeout for fail-fast (5s instead of 30s)
 }
 
 // Circuit Breaker States
@@ -72,9 +72,9 @@ type CircuitBreaker struct {
 func NewCircuitBreaker() *CircuitBreaker {
 	return &CircuitBreaker{
 		state:           StateClosed,
-		maxFailures:     3,           // Trip after 3 failures
-		timeout:         10 * time.Second, // Stay open for 10 seconds
-		halfOpenTimeout: 5 * time.Second,  // Allow retry after 5 seconds
+		maxFailures:     3,            // Trip after 3 failures
+		timeout:         5 * time.Second,  // Stay open for 5 seconds
+		halfOpenTimeout: 3 * time.Second,  // Allow retry after 3 seconds
 	}
 }
 

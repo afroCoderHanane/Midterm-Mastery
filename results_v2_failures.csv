@@ -1,1 +1,2 @@
 Method,Name,Error,Occurrences
+GET,/product-details/[id],CatchResponseError('Failed with status 500'),7659
