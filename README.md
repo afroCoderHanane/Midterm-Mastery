@@ -581,20 +581,6 @@ This pattern is used by:
 
 ---
 
-
-
-
----
-
-## 🔗 Additional Resources
-
-- **Book:** "Building Microservices" by Sam Newman
-- **Pattern:** Circuit Breaker - Martin Fowler
-- **Tools:** Netflix Hystrix, Resilience4j
-- **Monitoring:** Prometheus + Grafana for production circuit breaker metrics
-
----
-
 ## 📝 Conclusion
 
 The Circuit Breaker pattern is essential for building resilient distributed systems. By detecting failures early and failing fast, we:
